@@ -1,0 +1,157 @@
+local Players = game:GetService("Players")
+local Lighting = game:GetService("Lighting")
+local player = Players.LocalPlayer
+local mouse = player:GetMouse()
+
+pcall(function()
+    player.PlayerGui:FindFirstChild("AstraUniversalHub"):Destroy()
+end)
+
+local savedCFrame = nil
+local fullBrightOn = false
+
+local oldLighting = {
+    Brightness = Lighting.Brightness,
+    ClockTime = Lighting.ClockTime,
+    FogEnd = Lighting.FogEnd,
+    Ambient = Lighting.Ambient,
+    OutdoorAmbient = Lighting.OutdoorAmbient
+}
+
+local function getHRP()
+    local char = player.Character or player.CharacterAdded:Wait()
+    return char:WaitForChild("HumanoidRootPart",5)
+end
+
+-- ===== FUNCTIONS =====
+
+local function savePosition()
+    local hrp = getHRP()
+    if hrp then
+        savedCFrame = hrp.CFrame
+    end
+end
+
+local function tpSaved()
+    if not savedCFrame then return end
+    local hrp = getHRP()
+    if not hrp then return end
+    hrp.Anchored = true
+    hrp.CFrame = savedCFrame
+    task.wait(0.1)
+    hrp.Anchored = false
+end
+
+local function tpMap()
+    local hrp = getHRP()
+    if not hrp then return end
+    hrp.Anchored = true
+    hrp.CFrame = CFrame.new(59,-60,-77)
+    task.wait(0.1)
+    hrp.Anchored = false
+end
+
+local function toggleFullBright()
+    fullBrightOn = not fullBrightOn
+    if fullBrightOn then
+        Lighting.Brightness = 5
+        Lighting.ClockTime = 14
+        Lighting.FogEnd = 1e9
+        Lighting.Ambient = Color3.new(1,1,1)
+        Lighting.OutdoorAmbient = Color3.new(1,1,1)
+    else
+        for i,v in pairs(oldLighting) do
+            Lighting[i] = v
+        end
+    end
+end
+
+-- ===== TP TOOL (Infinity Yield style) =====
+
+local function giveTPTool()
+    if player.Backpack:FindFirstChild("TP Tool") then return end
+
+    local tool = Instance.new("Tool")
+    tool.Name = "TP Tool"
+    tool.RequiresHandle = false
+    tool.Parent = player.Backpack
+
+    tool.Activated:Connect(function()
+        local hrp = getHRP()
+        if not hrp then return end
+        if mouse.Hit then
+            hrp.Anchored = true
+            hrp.CFrame = mouse.Hit + Vector3.new(0,3,0)
+            task.wait(0.05)
+            hrp.Anchored = false
+        end
+    end)
+end
+
+-- ===== UI =====
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "AstraUniversalHub"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = player:WaitForChild("PlayerGui")
+
+local Frame = Instance.new("Frame")
+Frame.Size = UDim2.new(0,300,0,310)
+Frame.Position = UDim2.new(0.5,-150,0.5,-155)
+Frame.BackgroundColor3 = Color3.fromRGB(18,18,18)
+Frame.BorderSizePixel = 0
+Frame.Active = true
+Frame.Draggable = true
+Frame.Parent = ScreenGui
+Instance.new("UICorner",Frame).CornerRadius = UDim.new(0,12)
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1,0,0,42)
+Title.BackgroundTransparency = 1
+Title.Text = "Astra Universal Hub"
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 18
+Title.TextColor3 = Color3.fromRGB(0,170,255)
+Title.Parent = Frame
+
+local Line = Instance.new("Frame")
+Line.Size = UDim2.new(1,-40,0,2)
+Line.Position = UDim2.new(0,20,0,42)
+Line.BackgroundColor3 = Color3.fromRGB(0,170,255)
+Line.BorderSizePixel = 0
+Line.Parent = Frame
+
+local function makeBtn(text,y)
+    local b = Instance.new("TextButton")
+    b.Size = UDim2.new(0,260,0,38)
+    b.Position = UDim2.new(0.5,-130,0,y)
+    b.BackgroundColor3 = Color3.fromRGB(35,35,35)
+    b.Text = text
+    b.Font = Enum.Font.Gotham
+    b.TextSize = 14
+    b.TextColor3 = Color3.new(1,1,1)
+    b.Parent = Frame
+    Instance.new("UICorner",b).CornerRadius = UDim.new(0,10)
+    return b
+end
+
+local saveBtn = makeBtn("Save Position",60)
+local tpSavedBtn = makeBtn("Teleport To Saved",105)
+local fbBtn = makeBtn("Full Bright : OFF",150)
+local mapBtn = makeBtn("Teleport To Map",195)
+local toolBtn = makeBtn("Give TP Tool",240)
+
+saveBtn.MouseButton1Click:Connect(savePosition)
+tpSavedBtn.MouseButton1Click:Connect(tpSaved)
+mapBtn.MouseButton1Click:Connect(tpMap)
+toolBtn.MouseButton1Click:Connect(giveTPTool)
+
+fbBtn.MouseButton1Click:Connect(function()
+    toggleFullBright()
+    fbBtn.Text = fullBrightOn and "Full Bright : ON" or "Full Bright : OFF"
+end)
+
+player.CharacterAdded:Connect(function()
+    task.wait(1)
+    ScreenGui.Parent = player.PlayerGui
+end)
